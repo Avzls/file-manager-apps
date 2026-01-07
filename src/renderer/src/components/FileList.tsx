@@ -48,7 +48,10 @@ export function FileList(): JSX.Element {
     loadDirectory,
     openInExplorer,
     getFilteredFiles,
-    categoryFilter
+    categoryFilter,
+    goBack,
+    navigateTo,
+    setFiles
   } = useFileStore()
   
   const { query, results } = useSearchStore()
@@ -82,6 +85,88 @@ export function FileList(): JSX.Element {
       // Ignore if typing in input
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
         return
+      }
+
+      // Arrow Keys Navigation
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+        e.preventDefault()
+        const files = getFilteredFiles()
+        if (files.length === 0) return
+
+        let newIndex = 0
+        const currentIndex = selectedFiles.length > 0 
+          ? files.findIndex(f => f.id === selectedFiles[selectedFiles.length - 1].id)
+          : -1
+
+        if (currentIndex === -1) {
+          // Select first file if none selected
+          newIndex = 0
+        } else {
+          // Calculate grid columns based on Tailwind breakpoints
+          // grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6
+          let gridColumns = 1
+          if (viewMode === 'grid') {
+            const width = window.innerWidth
+            if (width >= 1280) gridColumns = 6      // xl
+            else if (width >= 1024) gridColumns = 5 // lg
+            else if (width >= 768) gridColumns = 4  // md
+            else if (width >= 640) gridColumns = 3  // sm
+            else gridColumns = 2                    // default
+          }
+
+          switch (e.key) {
+            case 'ArrowRight':
+              newIndex = Math.min(currentIndex + 1, files.length - 1)
+              break
+            case 'ArrowLeft':
+              newIndex = Math.max(currentIndex - 1, 0)
+              break
+            case 'ArrowDown':
+              newIndex = Math.min(currentIndex + gridColumns, files.length - 1)
+              break
+            case 'ArrowUp':
+              newIndex = Math.max(currentIndex - gridColumns, 0)
+              break
+          }
+        }
+
+        const fileToSelect = files[newIndex]
+        
+        // Handle shift selection
+        if (e.shiftKey) {
+          toggleFileSelection(fileToSelect, false, true)
+        } else {
+          // Single select
+          setFiles(files) // Reset selection context
+          toggleFileSelection(fileToSelect, false, false)
+        }
+
+        // Scroll into view
+        const element = document.getElementById(`file-${fileToSelect.id}`)
+        element?.scrollIntoView({ block: 'nearest' })
+      }
+
+      // Enter - Open file/folder
+      if (e.key === 'Enter' && selectedFiles.length === 1) {
+        e.preventDefault()
+        const file = selectedFiles[0]
+        if (file.isDirectory) {
+          navigateTo(file.path)
+        } else {
+          setSelectedFile(file) // Open preview
+        }
+      }
+
+      // Backspace - Go Up
+      if (e.key === 'Backspace') {
+        e.preventDefault()
+        goBack()
+      }
+
+      // F5 - Refresh
+      if (e.key === 'F5') {
+        e.preventDefault()
+        loadDirectory(currentPath)
       }
 
       // Delete - delete selected files
@@ -226,44 +311,6 @@ export function FileList(): JSX.Element {
 
   return (
     <>
-      {/* Floating Action Bar - Kiosk Style */}
-      {selectedFiles.length > 0 && (
-        <div className="floating-action-bar">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary text-primary-foreground font-bold">
-              {selectedFiles.length}
-            </div>
-            <div className="text-sm">
-              <span className="font-medium">files selected</span>
-            </div>
-          </div>
-          <div className="h-6 w-px bg-border" />
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(selectedFiles.map(f => f.path).join('\n'))
-                toast.success(`Copied ${selectedFiles.length} paths`)
-              }}
-              className="touch-button px-4 bg-secondary text-secondary-foreground hover:bg-secondary/80"
-            >
-              Copy Paths
-            </button>
-            <button
-              onClick={() => setShowBatchDelete(true)}
-              className="touch-button px-4 bg-red-500 text-white hover:bg-red-600"
-            >
-              Delete
-            </button>
-            <button
-              onClick={clearSelection}
-              className="touch-button px-4 bg-muted text-muted-foreground hover:bg-muted/80"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
-
       <div className="h-full overflow-auto p-4">
         {viewMode === 'grid' ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
