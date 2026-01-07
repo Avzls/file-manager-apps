@@ -6,6 +6,7 @@ import { TabBar } from './components/TabBar'
 import { FileList } from './components/FileList'
 import { PreviewPanel } from './components/PreviewPanel'
 import { Settings } from './components/Settings'
+import { CommandPalette } from './components/CommandPalette'
 import { ResizeHandle } from './components/ResizeHandle'
 import { useFileStore } from './stores/fileStore'
 import { initializeTheme } from './stores/settingsStore'
@@ -19,6 +20,13 @@ function App(): JSX.Element {
   // Initialize theme on mount
   useEffect(() => {
     initializeTheme()
+  }, [])
+
+  // Listen for open-settings event from CommandPalette
+  useEffect(() => {
+    const handleOpenSettings = () => setSettingsOpen(true)
+    document.addEventListener('open-settings', handleOpenSettings)
+    return () => document.removeEventListener('open-settings', handleOpenSettings)
   }, [])
 
   // Handle resize
@@ -83,6 +91,9 @@ function App(): JSX.Element {
 
       {/* Settings Modal */}
       <Settings isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
+
+      {/* Command Palette */}
+      <CommandPalette />
     </div>
   )
 }

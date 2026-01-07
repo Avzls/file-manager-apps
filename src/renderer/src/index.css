@@ -72,11 +72,12 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-muted-foreground/30 rounded-full;
+  @apply rounded-full;
+  background-color: hsl(var(--muted-foreground) / 0.3);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-muted-foreground/50;
+  background-color: hsl(var(--muted-foreground) / 0.5);
 }
 
 /* File grid animations */
@@ -98,6 +99,7 @@
   border-color: hsl(var(--border));
 }
 
+
 /* Sonner toast overrides for light theme */
 :root [data-sonner-toaster] [data-sonner-toast] {
   --normal-bg: hsl(0 0% 100%);
@@ -105,3 +107,207 @@
   --normal-border: hsl(var(--border));
 }
 
+/* ================== KIOSK STYLE ANIMATIONS ================== */
+
+/* Enhanced file card with kiosk-style hover */
+.file-card {
+  @apply relative transition-all duration-300 ease-out;
+  transform-style: preserve-3d;
+}
+
+.file-card:hover {
+  @apply transform scale-105 -translate-y-1;
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.2);
+}
+
+.file-card:active {
+  @apply scale-95;
+  transition-duration: 100ms;
+}
+
+/* Selected file glow effect */
+.file-card.selected {
+  @apply ring-2 ring-primary ring-offset-2;
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+}
+
+/* Floating Action Bar - McDonald's style */
+.floating-action-bar {
+  @apply fixed bottom-6 left-1/2 -translate-x-1/2 
+         flex items-center gap-3 px-6 py-4 
+         backdrop-blur-xl 
+         rounded-2xl shadow-2xl border border-border
+         z-50;
+  background-color: hsl(var(--card) / 0.95);
+  animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(100px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* Pill button style (like MCD menu tabs) */
+.pill-button {
+  @apply px-4 py-2 rounded-full font-medium text-sm
+         transition-all duration-200 ease-out
+         hover:scale-105 active:scale-95;
+}
+
+.pill-button.active {
+  @apply bg-primary text-primary-foreground shadow-lg;
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+}
+
+.pill-button:not(.active) {
+  @apply bg-secondary text-secondary-foreground;
+}
+
+.pill-button:not(.active):hover {
+  background-color: hsl(var(--secondary) / 0.8);
+}
+
+/* Category pills container with scroll */
+.category-pills {
+  @apply flex gap-2 overflow-x-auto pb-2;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.category-pills::-webkit-scrollbar {
+  display: none;
+}
+
+/* Glassmorphism card */
+.glass-card {
+  @apply backdrop-blur-lg border rounded-xl;
+  background-color: hsl(var(--card) / 0.8);
+  border-color: hsl(var(--border) / 0.5);
+}
+
+/* Skeleton loading animation */
+.skeleton {
+  @apply bg-muted animate-pulse rounded;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--muted)) 25%,
+    hsl(var(--muted-foreground) / 0.1) 50%,
+    hsl(var(--muted)) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Bounce on select animation */
+@keyframes bounce-select {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.bounce-select {
+  animation: bounce-select 0.2s ease-out;
+}
+
+/* Progress ring animation */
+.progress-ring {
+  @apply transition-all duration-300;
+  transform: rotate(-90deg);
+}
+
+/* Folder open animation */
+@keyframes folder-open {
+  0% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.folder-content {
+  animation: folder-open 0.25s ease-out;
+}
+
+/* Stagger animation for grid items */
+.stagger-item {
+  opacity: 0;
+  animation: fadeInUp 0.3s ease-out forwards;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Toast slide animation */
+.toast-slide-in {
+  animation: toastSlide 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes toastSlide {
+  from {
+    opacity: 0;
+    transform: translateX(100px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Hover ripple effect */
+.ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at var(--ripple-x, 50%) var(--ripple-y, 50%), 
+    rgba(255, 255, 255, 0.3) 0%, 
+    transparent 60%);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.ripple:hover::after {
+  opacity: 1;
+}
+
+/* Large touch-friendly buttons */
+.touch-button {
+  @apply min-h-[48px] min-w-[48px] flex items-center justify-center
+         rounded-xl transition-all duration-200 ease-out
+         hover:scale-105 active:scale-95;
+}
+
+/* Dark mode enhancements */
+.dark .file-card:hover {
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+}
+
+.dark .file-card.selected {
+  box-shadow: 0 0 30px rgba(59, 130, 246, 0.4);
+}
+
+.dark .floating-action-bar {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+}
