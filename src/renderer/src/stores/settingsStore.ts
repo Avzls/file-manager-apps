@@ -2,8 +2,8 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
 interface SettingsState {
-  // Paths
-  serverPath: string
+  // Paths - now supports multiple root paths
+  rootPaths: string[]
   
   // Appearance
   theme: 'light' | 'dark' | 'system'
@@ -18,7 +18,8 @@ interface SettingsState {
   recentPaths: string[]
   
   // Actions
-  setServerPath: (path: string) => void
+  addRootPath: (path: string) => void
+  removeRootPath: (path: string) => void
   setTheme: (theme: 'light' | 'dark' | 'system') => void
   setViewMode: (mode: 'grid' | 'list') => void
   setThumbnailSize: (size: 'small' | 'medium' | 'large') => void
@@ -31,7 +32,7 @@ interface SettingsState {
 export const useSettingsStore = create<SettingsState>()(
   persist(
     (set, get) => ({
-      serverPath: 'D:\\coba',
+      rootPaths: ['D:\\coba'],
       theme: 'dark',
       viewMode: 'grid',
       thumbnailSize: 'medium',
@@ -39,7 +40,15 @@ export const useSettingsStore = create<SettingsState>()(
       showHiddenFiles: false,
       recentPaths: [],
 
-      setServerPath: (path) => set({ serverPath: path }),
+      addRootPath: (path) => {
+        const current = get().rootPaths
+        if (!current.includes(path)) {
+          set({ rootPaths: [...current, path] })
+        }
+      },
+      removeRootPath: (path) => {
+        set({ rootPaths: get().rootPaths.filter(p => p !== path) })
+      },
       setTheme: (theme) => {
         set({ theme })
         // Apply theme to document

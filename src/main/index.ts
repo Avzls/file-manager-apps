@@ -180,6 +180,104 @@ function setupIpcHandlers(mainWindow: BrowserWindow): void {
     return buffer
   })
 
+  // Extract thumbnail from Office files (docx, xlsx, pptx)
+  // Falls back to mammoth.js for DOCX if no embedded thumbnail
+  ipcMain.handle('file:get-office-thumbnail', async (_, filePath: string) => {
+    const AdmZip = (await import('adm-zip')).default
+    const fs = await import('fs')
+    const mammoth = await import('mammoth')
+    
+    if (!fs.existsSync(filePath)) {
+      return null
+    }
+    
+    try {
+      const zip = new AdmZip(filePath)
+      
+      // First try to find embedded thumbnail
+      const thumbnailPaths = [
+        'docProps/thumbnail.jpeg',
+        'docProps/thumbnail.png'
+      ]
+      
+      for (const thumbPath of thumbnailPaths) {
+        const entry = zip.getEntry(thumbPath)
+        if (entry) {
+          const buffer = entry.getData()
+          const base64 = buffer.toString('base64')
+          const ext = thumbPath.endsWith('.png') ? 'png' : 'jpeg'
+          return `data:image/${ext};base64,${base64}`
+        }
+      }
+      
+      // Fallback: For DOCX, render to HTML and create a text preview
+      if (filePath.toLowerCase().endsWith('.docx')) {
+        const result = await mammoth.extractRawText({ path: filePath })
+        const text = result.value.substring(0, 200).trim()
+        
+        if (text) {
+          // Create a simple SVG with text preview
+          const escapedText = text
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+          
+          // Split into lines - more lines, more chars per line
+          const words = escapedText.split(' ')
+          const lines: string[] = []
+          let currentLine = ''
+          
+          for (const word of words) {
+            if (currentLine.length + word.length > 15) {
+              lines.push(currentLine)
+              currentLine = word
+              if (lines.length >= 6) break
+            } else {
+              currentLine += (currentLine ? ' ' : '') + word
+            }
+          }
+          if (currentLine && lines.length < 6) lines.push(currentLine)
+          
+          const linesSvg = lines.map((line, i) => 
+            `<text x="10" y="${32 + i * 12}" fill="#333" font-size="9" font-family="Segoe UI, Arial">${line}</text>`
+          ).join('')
+          
+          // Premium design with gradient and Word icon
+          const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+            <defs>
+              <linearGradient id="docBg" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" style="stop-color:#ffffff"/>
+                <stop offset="100%" style="stop-color:#f0f4f8"/>
+              </linearGradient>
+            </defs>
+            <rect width="100" height="100" fill="url(#docBg)" rx="6"/>
+            <rect x="6" y="6" width="88" height="88" fill="white" stroke="#e2e8f0" stroke-width="1" rx="4"/>
+            
+            <!-- Word icon in corner -->
+            <rect x="70" y="8" width="22" height="16" fill="#2b579a" rx="2"/>
+            <text x="81" y="20" fill="white" font-size="10" font-weight="bold" font-family="Arial" text-anchor="middle">W</text>
+            
+            <!-- Text content -->
+            ${linesSvg}
+            
+            <!-- File type badge -->
+            <rect x="6" y="82" width="36" height="14" fill="#2b579a" rx="2"/>
+            <text x="24" y="92" fill="white" font-size="8" font-family="Arial" text-anchor="middle">.DOCX</text>
+          </svg>`
+          
+          const base64 = Buffer.from(svg).toString('base64')
+          return `data:image/svg+xml;base64,${base64}`
+        }
+      }
+      
+      return null
+    } catch (err) {
+      console.error('Office thumbnail extraction error:', err)
+      return null
+    }
+  })
+
   // Read image as data URL
   ipcMain.handle('file:read-image-url', async (_, path: string) => {
     const fs = await import('fs/promises')

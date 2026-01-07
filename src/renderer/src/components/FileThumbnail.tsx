@@ -131,7 +131,30 @@ export function FileThumbnail({ file, size = 'medium' }: FileThumbnailProps): JS
 
       loadPdfThumbnail()
     }
-  }, [file.path, file.category, file.isDirectory])
+
+    // Load thumbnail for Office documents (docx, xlsx, pptx)
+    if (file.category === 'document' || file.category === 'spreadsheet') {
+      const ext = file.extension?.toLowerCase()
+      if (ext === '.docx' || ext === '.xlsx' || ext === '.pptx') {
+        setLoading(true)
+        setError(false)
+
+        ;(window as any).api.getOfficeThumbnail(file.path)
+          .then((url: string | null) => {
+            if (url) {
+              setThumbnail(url)
+            } else {
+              setError(true)
+            }
+            setLoading(false)
+          })
+          .catch(() => {
+            setError(true)
+            setLoading(false)
+          })
+      }
+    }
+  }, [file.path, file.category, file.isDirectory, file.extension])
 
   // Folder icon
   if (file.isDirectory) {
@@ -142,8 +165,8 @@ export function FileThumbnail({ file, size = 'medium' }: FileThumbnailProps): JS
     )
   }
 
-  // Image/PDF thumbnail
-  if ((file.category === 'image' || file.category === 'pdf') && thumbnail && !error) {
+  // Image/PDF/Office thumbnail
+  if ((file.category === 'image' || file.category === 'pdf' || file.category === 'document' || file.category === 'spreadsheet') && thumbnail && !error) {
     return (
       <div className={`${sizeClasses[size]} flex items-center justify-center overflow-hidden rounded-md bg-gray-100 dark:bg-gray-800`}>
         <img 
@@ -157,7 +180,7 @@ export function FileThumbnail({ file, size = 'medium' }: FileThumbnailProps): JS
   }
 
   // Loading state
-  if ((file.category === 'image' || file.category === 'pdf') && loading) {
+  if ((file.category === 'image' || file.category === 'pdf' || file.category === 'document' || file.category === 'spreadsheet') && loading) {
     return (
       <div className={`${sizeClasses[size]} flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-md animate-pulse`}>
         {file.category === 'pdf' ? (

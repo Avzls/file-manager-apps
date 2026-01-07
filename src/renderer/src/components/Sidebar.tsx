@@ -4,11 +4,13 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
-  Clock
+  Clock,
+  FolderOpen
 } from 'lucide-react'
 import { useFileStore } from '../stores/fileStore'
 import { useFavoritesStore } from '../stores/favoritesStore'
 import { useRecentFilesStore } from '../stores/recentFilesStore'
+import { useSettingsStore } from '../stores/settingsStore'
 import { IndexPanel } from './IndexPanel'
 import { FileCategory } from '@shared/types'
 
@@ -19,7 +21,8 @@ interface SidebarProps {
 }
 
 export function Sidebar({ collapsed, onToggle, onOpenSettings }: SidebarProps): JSX.Element {
-  const { categoryFilter, setCategoryFilter, files } = useFileStore()
+  const { categoryFilter, setCategoryFilter, files, currentPath, navigateTo } = useFileStore()
+  const { rootPaths } = useSettingsStore()
 
   // Calculate category counts from current files
   const categoryCounts = files.reduce((acc, file) => {
@@ -62,8 +65,38 @@ export function Sidebar({ collapsed, onToggle, onOpenSettings }: SidebarProps): 
         </button>
       </div>
 
-      {/* Categories */}
+      {/* Root Paths Quick Navigation */}
       <div className="flex-1 overflow-auto py-3">
+        {!collapsed && rootPaths.length > 0 && (
+          <div className="px-3 mb-4">
+            <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wider">
+              Root Paths
+            </h3>
+            <div className="space-y-1">
+              {rootPaths.map((path, index) => {
+                const name = path.split('\\').pop() || path
+                const isActive = currentPath === path || currentPath.startsWith(path + '\\')
+                return (
+                  <button
+                    key={index}
+                    onClick={() => navigateTo(path)}
+                    className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors text-left ${
+                      isActive
+                        ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                        : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`}
+                    title={path}
+                  >
+                    <FolderOpen className="h-4 w-4 text-yellow-500 shrink-0" />
+                    <span className="text-sm truncate">{name}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Categories */}
         <div className="px-3 mb-4">
           {!collapsed && (
             <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wider">
