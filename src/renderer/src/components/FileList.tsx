@@ -16,6 +16,7 @@ import { useFileStore } from '../stores/fileStore'
 import { useSearchStore } from '../stores/searchStore'
 import { useFavoritesStore } from '../stores/favoritesStore'
 import { ContextMenu } from './ContextMenu'
+import { FileThumbnail } from './FileThumbnail'
 import { FileInfo, FileCategory } from '@shared/types'
 
 const categoryIcons: Record<FileCategory, React.ReactNode> = {
@@ -36,7 +37,12 @@ export function FileList(): JSX.Element {
     error, 
     viewMode,
     selectedFile,
+    selectedFiles,
     setSelectedFile,
+    toggleFileSelection,
+    selectAll,
+    clearSelection,
+    isFileSelected,
     openFile,
     loadDirectory,
     openInExplorer,
@@ -60,11 +66,48 @@ export function FileList(): JSX.Element {
   
   // Delete confirmation state
   const [deleteFile, setDeleteFile] = useState<FileInfo | null>(null)
+  
+  // Batch delete confirmation
+  const [showBatchDelete, setShowBatchDelete] = useState(false)
 
   // Load initial directory
   useEffect(() => {
     loadDirectory(currentPath)
   }, [])
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if typing in input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return
+      }
+
+      // Delete - delete selected files
+      if (e.key === 'Delete' && selectedFiles.length > 0) {
+        e.preventDefault()
+        if (selectedFiles.length === 1) {
+          setDeleteFile(selectedFiles[0])
+        } else {
+          setShowBatchDelete(true)
+        }
+      }
+
+      // Ctrl+A - select all
+      if (e.key === 'a' && e.ctrlKey) {
+        e.preventDefault()
+        selectAll()
+      }
+
+      // Escape - clear selection
+      if (e.key === 'Escape') {
+        clearSelection()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [selectedFiles, selectAll, clearSelection])
 
   // Display search results, category filtered files, or all files
   const filteredFiles = getFilteredFiles()
@@ -180,6 +223,40 @@ export function FileList(): JSX.Element {
 
   return (
     <>
+      {/* Batch Operations Toolbar */}
+      {selectedFiles.length > 1 && (
+        <div className="sticky top-0 z-10 bg-blue-500 text-white px-4 py-2 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="font-medium">{selectedFiles.length} files selected</span>
+            <button
+              onClick={clearSelection}
+              className="text-sm underline hover:no-underline"
+            >
+              Clear
+            </button>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                selectedFiles.forEach(f => {
+                  navigator.clipboard.writeText(selectedFiles.map(f => f.path).join('\n'))
+                })
+                toast.success(`Copied ${selectedFiles.length} paths to clipboard`)
+              }}
+              className="px-3 py-1 bg-white/20 rounded hover:bg-white/30 text-sm"
+            >
+              Copy Paths
+            </button>
+            <button
+              onClick={() => setShowBatchDelete(true)}
+              className="px-3 py-1 bg-red-600 rounded hover:bg-red-700 text-sm"
+            >
+              Delete All
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="h-full overflow-auto p-4">
         {viewMode === 'grid' ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
@@ -187,9 +264,9 @@ export function FileList(): JSX.Element {
               <FileGridItem
                 key={file.id}
                 file={file}
-                isSelected={selectedFile?.id === file.id}
+                isSelected={isFileSelected(file)}
                 isFavorite={isFavorite(file.path)}
-                onClick={() => setSelectedFile(file)}
+                onClick={(e) => toggleFileSelection(file, e.ctrlKey, e.shiftKey)}
                 onDoubleClick={() => openFile(file)}
                 onContextMenu={(e) => handleContextMenu(e, file)}
                 onDragStart={(e) => handleDragStart(e, file)}
@@ -210,9 +287,9 @@ export function FileList(): JSX.Element {
               <FileListItem
                 key={file.id}
                 file={file}
-                isSelected={selectedFile?.id === file.id}
+                isSelected={isFileSelected(file)}
                 isFavorite={isFavorite(file.path)}
-                onClick={() => setSelectedFile(file)}
+                onClick={(e) => toggleFileSelection(file, e.ctrlKey, e.shiftKey)}
                 onDoubleClick={() => openFile(file)}
                 onContextMenu={(e) => handleContextMenu(e, file)}
                 onDragStart={(e) => handleDragStart(e, file)}
@@ -298,6 +375,51 @@ export function FileList(): JSX.Element {
           </div>
         </div>
       )}
+
+      {/* Batch Delete Confirmation */}
+      {showBatchDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-5 w-96 shadow-xl">
+            <h3 className="font-medium mb-2 text-gray-900 dark:text-white">Delete {selectedFiles.length} Files</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
+              Are you sure you want to delete these files?
+            </p>
+            <div className="max-h-32 overflow-auto mb-4 text-xs bg-gray-100 dark:bg-gray-800 rounded p-2">
+              {selectedFiles.map(f => (
+                <div key={f.id} className="truncate">{f.name}</div>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowBatchDelete(false)}
+                className="flex-1 px-3 py-2 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white rounded-md text-sm hover:bg-gray-200 dark:hover:bg-gray-700"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  let successCount = 0
+                  for (const file of selectedFiles) {
+                    try {
+                      await (window as any).api.deleteFile(file.path)
+                      successCount++
+                    } catch (err) {
+                      console.error('Delete failed:', file.name, err)
+                    }
+                  }
+                  toast.success(`Deleted ${successCount} files`)
+                  setShowBatchDelete(false)
+                  clearSelection()
+                  loadDirectory(currentPath)
+                }}
+                className="flex-1 px-3 py-2 bg-red-600 text-white rounded-md text-sm hover:bg-red-700"
+              >
+                Delete All
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }
@@ -306,7 +428,7 @@ interface FileItemProps {
   file: FileInfo
   isSelected: boolean
   isFavorite: boolean
-  onClick: () => void
+  onClick: (e: React.MouseEvent) => void
   onDoubleClick: () => void
   onContextMenu: (e: React.MouseEvent) => void
   onDragStart: (e: React.DragEvent) => void
@@ -346,14 +468,8 @@ function FileGridItem({
         <Star className="absolute top-2 right-2 h-4 w-4 fill-yellow-500 text-yellow-500" />
       )}
       
-      {/* Icon */}
-      <div className="w-12 h-12 flex items-center justify-center">
-        {file.isDirectory ? (
-          <Folder className="h-10 w-10 text-yellow-500" />
-        ) : (
-          categoryIcons[file.category]
-        )}
-      </div>
+      {/* Thumbnail */}
+      <FileThumbnail file={file} size="medium" />
       
       {/* Name */}
       <span 

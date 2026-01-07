@@ -33,6 +33,9 @@ const api = {
   openFolder: (path: string): Promise<void> => 
     ipcRenderer.invoke('file:open-folder', path),
 
+  quickOpen: (path: string, appPath?: string): Promise<boolean> =>
+    ipcRenderer.invoke('file:quick-open', path, appPath),
+
   readFileBuffer: (path: string): Promise<Buffer> =>
     ipcRenderer.invoke('file:read-buffer', path),
 
