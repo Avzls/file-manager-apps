@@ -17,6 +17,7 @@ import { useSearchStore } from '../stores/searchStore'
 import { useFavoritesStore } from '../stores/favoritesStore'
 import { ContextMenu } from './ContextMenu'
 import { FileThumbnail } from './FileThumbnail'
+import { SkeletonLoader } from './SkeletonLoader'
 import { FileInfo, FileCategory } from '@shared/types'
 
 const categoryIcons: Record<FileCategory, React.ReactNode> = {
@@ -90,6 +91,15 @@ export function FileList(): JSX.Element {
           setDeleteFile(selectedFiles[0])
         } else {
           setShowBatchDelete(true)
+        }
+      }
+
+      // Space - quick preview selected file
+      if (e.key === ' ' && selectedFiles.length === 1) {
+        e.preventDefault()
+        const file = selectedFiles[0]
+        if (!file.isDirectory) {
+          setSelectedFile(file)
         }
       }
 
@@ -184,14 +194,7 @@ export function FileList(): JSX.Element {
   }
 
   if (isLoading) {
-    return (
-      <div className="h-full flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground">Loading files...</p>
-        </div>
-      </div>
-    )
+    return <SkeletonLoader count={12} viewMode={viewMode} />
   }
 
   if (error) {
@@ -223,35 +226,39 @@ export function FileList(): JSX.Element {
 
   return (
     <>
-      {/* Batch Operations Toolbar */}
-      {selectedFiles.length > 1 && (
-        <div className="sticky top-0 z-10 bg-blue-500 text-white px-4 py-2 flex items-center justify-between">
+      {/* Floating Action Bar - Kiosk Style */}
+      {selectedFiles.length > 0 && (
+        <div className="floating-action-bar">
           <div className="flex items-center gap-3">
-            <span className="font-medium">{selectedFiles.length} files selected</span>
-            <button
-              onClick={clearSelection}
-              className="text-sm underline hover:no-underline"
-            >
-              Clear
-            </button>
+            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary text-primary-foreground font-bold">
+              {selectedFiles.length}
+            </div>
+            <div className="text-sm">
+              <span className="font-medium">files selected</span>
+            </div>
           </div>
+          <div className="h-6 w-px bg-border" />
           <div className="flex items-center gap-2">
             <button
               onClick={() => {
-                selectedFiles.forEach(f => {
-                  navigator.clipboard.writeText(selectedFiles.map(f => f.path).join('\n'))
-                })
-                toast.success(`Copied ${selectedFiles.length} paths to clipboard`)
+                navigator.clipboard.writeText(selectedFiles.map(f => f.path).join('\n'))
+                toast.success(`Copied ${selectedFiles.length} paths`)
               }}
-              className="px-3 py-1 bg-white/20 rounded hover:bg-white/30 text-sm"
+              className="touch-button px-4 bg-secondary text-secondary-foreground hover:bg-secondary/80"
             >
               Copy Paths
             </button>
             <button
               onClick={() => setShowBatchDelete(true)}
-              className="px-3 py-1 bg-red-600 rounded hover:bg-red-700 text-sm"
+              className="touch-button px-4 bg-red-500 text-white hover:bg-red-600"
             >
-              Delete All
+              Delete
+            </button>
+            <button
+              onClick={clearSelection}
+              className="touch-button px-4 bg-muted text-muted-foreground hover:bg-muted/80"
+            >
+              Cancel
             </button>
           </div>
         </div>
@@ -457,10 +464,10 @@ function FileGridItem({
       onDragStart={onDragStart}
       onDrop={onDrop}
       onDragOver={onDragOver}
-      className={`file-item relative flex flex-col items-center gap-2 p-4 rounded-lg cursor-pointer border ${
+      className={`file-card relative flex flex-col items-center gap-2 p-4 rounded-xl cursor-pointer border bg-card shadow-sm ${
         isSelected 
-          ? 'bg-primary/10 border-primary' 
-          : 'bg-card border-transparent hover:bg-muted hover:border-border'
+          ? 'selected bg-primary/10 border-primary' 
+          : 'border-border/50 hover:border-border'
       }`}
     >
       {/* Favorite Star */}

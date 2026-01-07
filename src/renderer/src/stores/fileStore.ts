@@ -16,6 +16,9 @@ interface FileState {
   history: string[]
   historyIndex: number
   
+  // Recent folders for command palette
+  recentFolders: string[]
+  
   // Loading states
   isLoading: boolean
   error: string | null
@@ -69,6 +72,7 @@ export const useFileStore = create<FileState>((set, get) => ({
   categoryFilter: null,
   history: [DEFAULT_PATH],
   historyIndex: 0,
+  recentFolders: [],
   isLoading: false,
   error: null,
   viewMode: 'grid',
@@ -176,12 +180,17 @@ export const useFileStore = create<FileState>((set, get) => ({
   },
 
   navigateTo: (path) => {
-    const { history, historyIndex } = get()
+    const { history, historyIndex, recentFolders } = get()
     const newHistory = [...history.slice(0, historyIndex + 1), path]
+    
+    // Track recent folders (max 10, no duplicates)
+    const updatedRecent = [path, ...recentFolders.filter(f => f !== path)].slice(0, 10)
+    
     set({
       currentPath: path,
       history: newHistory,
-      historyIndex: newHistory.length - 1
+      historyIndex: newHistory.length - 1,
+      recentFolders: updatedRecent
     })
     get().loadDirectory(path)
     
