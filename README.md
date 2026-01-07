@@ -21,6 +21,32 @@ Aplikasi desktop untuk mempermudah pencarian dan pengelolaan file di folder engi
 - 🔄 **Auto-Update** - Update otomatis dari server
 - 🌙 **Dark/Light Theme** - Tema gelap dan terang
 
+## 💻 System Requirements
+
+### Minimum Requirements
+| Component | Specification |
+|-----------|---------------|
+| **OS** | Windows 10 (64-bit) |
+| **Processor** | Intel Core i3 / AMD Ryzen 3 |
+| **RAM** | 4 GB |
+| **Storage** | 200 MB |
+| **Display** | 1280 x 720 |
+
+### Supported Windows Versions
+- ✅ Windows 10 (64-bit) - Version 1903+
+- ✅ Windows 11 (64-bit) - All versions
+- ❌ Windows 7/8/8.1 - Not supported
+- ❌ Windows 32-bit - Not supported
+
+### Recommended
+| Component | Specification |
+|-----------|---------------|
+| **OS** | Windows 11 |
+| **Processor** | Intel Core i5 / AMD Ryzen 5 |
+| **RAM** | 8 GB |
+| **Storage** | 500 MB (untuk index database besar) |
+| **Display** | 1920 x 1080 |
+
 ## 📦 Instalasi
 
 ### Untuk User (Production)
