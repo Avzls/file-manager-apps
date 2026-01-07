@@ -1,19 +1,22 @@
 import { useEffect } from 'react'
 import { Database, RefreshCw, Loader2, FolderSearch } from 'lucide-react'
 import { useIndexStore } from '../stores/indexStore'
-import { useFileStore } from '../stores/fileStore'
+import { useSettingsStore } from '../stores/settingsStore'
 
 export function IndexPanel(): JSX.Element {
   const { isScanning, progress, stats, error, startScan, loadStats } = useIndexStore()
-  const { currentPath } = useFileStore()
+  const { rootPaths } = useSettingsStore()
 
   // Load stats on mount
   useEffect(() => {
     loadStats()
   }, [loadStats])
 
-  const handleScan = () => {
-    startScan(currentPath)
+  const handleScan = async () => {
+    // Scan all root paths sequentially
+    for (const path of rootPaths) {
+      await startScan(path)
+    }
   }
 
   const formatDuration = (lastScan: string | null): string => {
@@ -87,7 +90,7 @@ export function IndexPanel(): JSX.Element {
       {/* Scan Button */}
       <button
         onClick={handleScan}
-        disabled={isScanning}
+        disabled={isScanning || rootPaths.length === 0}
         className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isScanning ? (
@@ -98,7 +101,7 @@ export function IndexPanel(): JSX.Element {
         ) : (
           <>
             <FolderSearch className="h-4 w-4" />
-            <span className="text-sm">Scan Folder</span>
+            <span className="text-sm">Scan All ({rootPaths.length})</span>
           </>
         )}
       </button>

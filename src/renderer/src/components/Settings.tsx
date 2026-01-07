@@ -8,7 +8,8 @@ import {
   Grid,
   List,
   RefreshCw,
-  Trash2
+  Trash2,
+  Plus
 } from 'lucide-react'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useFileStore } from '../stores/fileStore'
@@ -20,12 +21,13 @@ interface SettingsProps {
 
 export function Settings({ isOpen, onClose }: SettingsProps): JSX.Element | null {
   const { 
-    serverPath, 
+    rootPaths, 
     theme, 
     thumbnailSize,
     indexOnStartup,
     recentPaths,
-    setServerPath, 
+    addRootPath, 
+    removeRootPath,
     setTheme,
     setThumbnailSize,
     setIndexOnStartup,
@@ -33,13 +35,22 @@ export function Settings({ isOpen, onClose }: SettingsProps): JSX.Element | null
   } = useSettingsStore()
   
   const { navigateTo } = useFileStore()
-  const [tempPath, setTempPath] = useState(serverPath)
+  const [newPath, setNewPath] = useState('')
 
   if (!isOpen) return null
 
-  const handleSavePath = () => {
-    setServerPath(tempPath)
-    navigateTo(tempPath)
+  const handleAddPath = async () => {
+    const path = await (window as any).api.openFolderDialog()
+    if (path) {
+      addRootPath(path)
+    }
+  }
+
+  const handleAddManualPath = () => {
+    if (newPath.trim()) {
+      addRootPath(newPath.trim())
+      setNewPath('')
+    }
   }
 
   return (
@@ -58,38 +69,70 @@ export function Settings({ isOpen, onClose }: SettingsProps): JSX.Element | null
 
         {/* Content */}
         <div className="p-6 space-y-6 max-h-[60vh] overflow-auto">
-          {/* Server Path */}
+          {/* Root Paths */}
           <div>
             <label className="text-sm font-medium mb-2 block text-gray-900 dark:text-white">
-              Server / Root Path
+              Root Paths (untuk di-index)
             </label>
+            
+            {/* Current paths list */}
+            <div className="space-y-2 mb-3">
+              {rootPaths.map((path, index) => (
+                <div 
+                  key={index}
+                  className="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-800 rounded-md"
+                >
+                  <FolderOpen className="h-4 w-4 text-yellow-500 shrink-0" />
+                  <span 
+                    className="flex-1 text-sm text-gray-900 dark:text-white truncate cursor-pointer hover:text-blue-500"
+                    onClick={() => navigateTo(path)}
+                    title={path}
+                  >
+                    {path}
+                  </span>
+                  <button
+                    onClick={() => removeRootPath(path)}
+                    className="p-1 text-gray-400 hover:text-red-500 rounded"
+                    title="Remove path"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+              {rootPaths.length === 0 && (
+                <p className="text-sm text-gray-500 dark:text-gray-400 italic">
+                  No paths added yet
+                </p>
+              )}
+            </div>
+
+            {/* Add new path */}
             <div className="flex gap-2">
               <input
                 type="text"
-                value={tempPath}
-                onChange={(e) => setTempPath(e.target.value)}
+                value={newPath}
+                onChange={(e) => setNewPath(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddManualPath()}
                 className="flex-1 px-3 py-2 rounded-md bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="\\\\192.168.2.10\\engineering"
               />
               <button
-                onClick={async () => {
-                  const path = await (window as any).api.openFolderDialog()
-                  if (path) setTempPath(path)
-                }}
+                onClick={handleAddManualPath}
+                className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
+                title="Add path"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+              <button
+                onClick={handleAddPath}
                 className="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 text-sm"
                 title="Browse folder"
               >
                 <FolderOpen className="h-4 w-4" />
               </button>
-              <button
-                onClick={handleSavePath}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
-              >
-                Apply
-              </button>
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Enter network share path or local folder
+              Add multiple folders untuk di-index dan dicari
             </p>
           </div>
 

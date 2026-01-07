@@ -42,6 +42,9 @@ const api = {
   readImageUrl: (path: string): Promise<string> =>
     ipcRenderer.invoke('file:read-image-url', path),
 
+  getOfficeThumbnail: (path: string): Promise<string | null> =>
+    ipcRenderer.invoke('file:get-office-thumbnail', path),
+
   // File operations
   renameFile: (oldPath: string, newName: string): Promise<string> =>
     ipcRenderer.invoke('file:rename', oldPath, newName),

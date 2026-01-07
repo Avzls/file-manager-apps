@@ -17,6 +17,7 @@
     "@radix-ui/react-separator": "^1.0.3",
     "@radix-ui/react-slot": "^1.0.2",
     "@radix-ui/react-tooltip": "^1.0.7",
+    "adm-zip": "^0.5.16",
     "better-sqlite3": "^12.5.0",
     "canvas": "^3.2.0",
     "class-variance-authority": "^0.7.0",
@@ -24,6 +25,7 @@
     "electron-updater": "^6.7.3",
     "fuse.js": "^7.0.0",
     "lucide-react": "^0.312.0",
+    "mammoth": "^1.11.0",
     "pdfjs-dist": "^5.4.530",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -34,6 +36,7 @@
   },
   "devDependencies": {
     "@electron-toolkit/utils": "^3.0.0",
+    "@types/adm-zip": "^0.5.7",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^20.11.0",
     "@types/react": "^18.2.48",
