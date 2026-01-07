@@ -9,10 +9,14 @@ import {
   List,
   RefreshCw,
   Trash2,
-  Plus
+  Plus,
+  Database,
+  CheckCircle,
+  XCircle
 } from 'lucide-react'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useFileStore } from '../stores/fileStore'
+import { toast } from 'sonner'
 
 interface SettingsProps {
   isOpen: boolean
@@ -26,16 +30,22 @@ export function Settings({ isOpen, onClose }: SettingsProps): JSX.Element | null
     thumbnailSize,
     indexOnStartup,
     recentPaths,
+    dbType,
+    sqlServerConfig,
     addRootPath, 
     removeRootPath,
     setTheme,
     setThumbnailSize,
     setIndexOnStartup,
-    clearRecentPaths
+    clearRecentPaths,
+    setDbType,
+    setSqlServerConfig
   } = useSettingsStore()
   
   const { navigateTo } = useFileStore()
   const [newPath, setNewPath] = useState('')
+  const [testingConnection, setTestingConnection] = useState(false)
+  const [connectionStatus, setConnectionStatus] = useState<'idle' | 'success' | 'error'>('idle')
 
   if (!isOpen) return null
 
@@ -203,6 +213,95 @@ export function Settings({ isOpen, onClose }: SettingsProps): JSX.Element | null
                 }`}
               />
             </button>
+          </div>
+
+          {/* Database Configuration */}
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Database className="h-4 w-4 text-gray-500" />
+              <label className="text-sm font-medium text-gray-900 dark:text-white">Database</label>
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+              Use SQL Server for multi-PC comment sync
+            </p>
+            
+            <div className="flex gap-2 mb-3">
+              <button
+                onClick={async () => {
+                  setDbType('sqlite')
+                  const result = await (window as any).api.setDbType('sqlite')
+                  toast.success(result.message)
+                }}
+                className={`flex-1 px-3 py-2 text-sm rounded-md transition-colors ${
+                  dbType === 'sqlite'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                }`}
+              >
+                SQLite (Local)
+              </button>
+              <button
+                onClick={async () => {
+                  setDbType('sqlserver')
+                  const result = await (window as any).api.setDbType('sqlserver')
+                  if (result.success) {
+                    toast.success(result.message)
+                    setConnectionStatus('success')
+                  } else {
+                    toast.error(result.message)
+                    setConnectionStatus('error')
+                  }
+                }}
+                className={`flex-1 px-3 py-2 text-sm rounded-md transition-colors ${
+                  dbType === 'sqlserver'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                }`}
+              >
+                SQL Server
+              </button>
+            </div>
+
+            {dbType === 'sqlserver' && (
+              <div className="space-y-2 p-3 bg-gray-100 dark:bg-gray-800 rounded-md">
+                <div className="text-xs text-gray-500 dark:text-gray-400">
+                  Server: <span className="text-gray-900 dark:text-white">{sqlServerConfig.server}</span>
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">
+                  Database: <span className="text-gray-900 dark:text-white">{sqlServerConfig.database}</span>
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">
+                  Auth: <span className="text-gray-900 dark:text-white">{sqlServerConfig.domain}\\{sqlServerConfig.username}</span>
+                </div>
+                <button
+                  onClick={async () => {
+                    setTestingConnection(true)
+                    const result = await (window as any).api.testDbConnection()
+                    setTestingConnection(false)
+                    if (result.success) {
+                      setConnectionStatus('success')
+                      toast.success('SQL Server connection successful!')
+                    } else {
+                      setConnectionStatus('error')
+                      toast.error(`Connection failed: ${result.message}`)
+                    }
+                  }}
+                  disabled={testingConnection}
+                  className="w-full mt-2 flex items-center justify-center gap-2 px-3 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm disabled:opacity-50"
+                >
+                  {testingConnection ? (
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                  ) : connectionStatus === 'success' ? (
+                    <CheckCircle className="h-4 w-4" />
+                  ) : connectionStatus === 'error' ? (
+                    <XCircle className="h-4 w-4" />
+                  ) : (
+                    <Database className="h-4 w-4" />
+                  )}
+                  {testingConnection ? 'Testing...' : 'Test Connection'}
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Recent Paths */}

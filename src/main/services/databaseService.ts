@@ -45,6 +45,14 @@ export class DatabaseService {
         last_scan TEXT,
         scan_duration_ms INTEGER
       );
+
+      CREATE TABLE IF NOT EXISTS file_comments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        file_path TEXT NOT NULL UNIQUE,
+        comment TEXT,
+        updated_at TEXT DEFAULT (datetime('now'))
+      );
+      CREATE INDEX IF NOT EXISTS idx_comments_path ON file_comments(file_path);
     `)
   }
 
@@ -188,6 +196,39 @@ export class DatabaseService {
       accessedAt: new Date(row.modified_at),
       parentPath: row.parent_path
     }
+  }
+
+  /**
+   * Get comment for a file
+   */
+  getComment(filePath: string): string | null {
+    const stmt = this.db.prepare(`
+      SELECT comment FROM file_comments WHERE file_path = ?
+    `)
+    const row = stmt.get(filePath) as { comment: string } | undefined
+    return row?.comment || null
+  }
+
+  /**
+   * Set comment for a file
+   */
+  setComment(filePath: string, comment: string): void {
+    const stmt = this.db.prepare(`
+      INSERT INTO file_comments (file_path, comment, updated_at)
+      VALUES (?, ?, datetime('now'))
+      ON CONFLICT(file_path) DO UPDATE SET 
+        comment = excluded.comment,
+        updated_at = datetime('now')
+    `)
+    stmt.run(filePath, comment)
+  }
+
+  /**
+   * Delete comment for a file
+   */
+  deleteComment(filePath: string): void {
+    const stmt = this.db.prepare(`DELETE FROM file_comments WHERE file_path = ?`)
+    stmt.run(filePath)
   }
 
   /**

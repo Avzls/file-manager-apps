@@ -184,6 +184,14 @@ export const useFileStore = create<FileState>((set, get) => ({
       historyIndex: newHistory.length - 1
     })
     get().loadDirectory(path)
+    
+    // Sync with tabs store (import at top of file)
+    import('./tabsStore').then(({ useTabsStore }) => {
+      const tabsState = useTabsStore.getState()
+      if (tabsState.activeTabId) {
+        tabsState.updateTabPath(tabsState.activeTabId, path)
+      }
+    })
   },
 
   goBack: () => {

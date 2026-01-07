@@ -7,6 +7,7 @@ import { autoUpdater } from 'electron-updater'
 import { FileService } from './services/fileService'
 import { SearchService } from './services/searchService'
 import { DatabaseService } from './services/databaseService'
+import { SqlServerService } from './services/sqlServerService'
 import { IndexService } from './services/indexService'
 import { AutoCADService } from './services/autocadService'
 
@@ -14,8 +15,9 @@ import { AutoCADService } from './services/autocadService'
 const fileService = new FileService()
 const searchService = new SearchService()
 const autocadService = new AutoCADService()
-let dbService: DatabaseService
+let dbService: DatabaseService | SqlServerService
 let indexService: IndexService
+let useSqlServer = false
 
 // Configure auto-updater
 autoUpdater.autoDownload = true
@@ -82,6 +84,61 @@ function setupIpcHandlers(mainWindow: BrowserWindow): void {
 
   ipcMain.handle('file:get-file-info', async (_, path: string) => {
     return await fileService.getFileInfo(path)
+  })
+
+  // File comments (works with both SQLite and SQL Server)
+  ipcMain.handle('file:get-comment', async (_, filePath: string) => {
+    if (useSqlServer && dbService instanceof SqlServerService) {
+      return await dbService.getComment(filePath)
+    }
+    return (dbService as DatabaseService).getComment(filePath)
+  })
+
+  ipcMain.handle('file:set-comment', async (_, filePath: string, comment: string) => {
+    if (useSqlServer && dbService instanceof SqlServerService) {
+      await dbService.setComment(filePath, comment)
+    } else {
+      (dbService as DatabaseService).setComment(filePath, comment)
+    }
+  })
+
+  ipcMain.handle('file:delete-comment', async (_, filePath: string) => {
+    if (useSqlServer && dbService instanceof SqlServerService) {
+      await dbService.deleteComment(filePath)
+    } else {
+      (dbService as DatabaseService).deleteComment(filePath)
+    }
+  })
+
+  // Switch database type
+  ipcMain.handle('db:set-type', async (_, dbType: 'sqlite' | 'sqlserver', config?: any) => {
+    if (dbType === 'sqlserver') {
+      const sqlService = new SqlServerService()
+      try {
+        await sqlService.connect()
+        dbService = sqlService
+        useSqlServer = true
+        return { success: true, message: 'Connected to SQL Server' }
+      } catch (err: any) {
+        return { success: false, message: err.message }
+      }
+    } else {
+      dbService = new DatabaseService()
+      useSqlServer = false
+      return { success: true, message: 'Using SQLite' }
+    }
+  })
+
+  // Test SQL Server connection
+  ipcMain.handle('db:test-connection', async () => {
+    try {
+      const testService = new SqlServerService()
+      await testService.connect()
+      await testService.close()
+      return { success: true, message: 'Connection successful' }
+    } catch (err: any) {
+      return { success: false, message: err.message }
+    }
   })
 
   ipcMain.handle('file:open-file', async (_, path: string) => {

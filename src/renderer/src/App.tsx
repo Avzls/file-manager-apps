@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Toaster } from 'sonner'
 import { Sidebar } from './components/Sidebar'
 import { Header } from './components/Header'
+import { TabBar } from './components/TabBar'
 import { FileList } from './components/FileList'
 import { PreviewPanel } from './components/PreviewPanel'
 import { Settings } from './components/Settings'
@@ -60,10 +61,16 @@ function App(): JSX.Element {
           onOpenSettings={() => setSettingsOpen(true)}
         />
 
-        {/* File List */}
-        <main className="flex-1 overflow-hidden">
-          <FileList />
-        </main>
+        {/* Main Area with Tabs */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Tab Bar */}
+          <TabBar />
+          
+          {/* File List */}
+          <main className="flex-1 overflow-hidden">
+            <FileList />
+          </main>
+        </div>
 
         {/* Preview Panel with Resize Handle */}
         {showPreview && (

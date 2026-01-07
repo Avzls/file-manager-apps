@@ -1,8 +1,10 @@
-import { X, ExternalLink, FolderOpen } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { X, ExternalLink, FolderOpen, MessageSquare, Save } from 'lucide-react'
 import { useFileStore } from '../stores/fileStore'
 import { PDFViewer } from './PDFViewer'
 import { ImageViewer } from './ImageViewer'
 import { DWGViewer } from './DWGViewer'
+import { toast } from 'sonner'
 
 interface PreviewPanelProps {
   width?: number
@@ -10,6 +12,41 @@ interface PreviewPanelProps {
 
 export function PreviewPanel({ width }: PreviewPanelProps): JSX.Element {
   const { selectedFile, setSelectedFile, openFile, openInExplorer } = useFileStore()
+  const [comment, setComment] = useState('')
+  const [isEditingComment, setIsEditingComment] = useState(false)
+  const [originalComment, setOriginalComment] = useState('')
+
+  // Load comment when file changes
+  useEffect(() => {
+    if (selectedFile && !selectedFile.isDirectory) {
+      ;(window as any).api.getComment(selectedFile.path)
+        .then((savedComment: string | null) => {
+          setComment(savedComment || '')
+          setOriginalComment(savedComment || '')
+        })
+        .catch(() => {
+          setComment('')
+          setOriginalComment('')
+        })
+    }
+  }, [selectedFile?.path])
+
+  const handleSaveComment = async () => {
+    if (!selectedFile) return
+    try {
+      if (comment.trim()) {
+        await (window as any).api.setComment(selectedFile.path, comment.trim())
+        toast.success('Comment saved')
+      } else {
+        await (window as any).api.deleteComment(selectedFile.path)
+        toast.success('Comment removed')
+      }
+      setOriginalComment(comment)
+      setIsEditingComment(false)
+    } catch (err) {
+      toast.error('Failed to save comment')
+    }
+  }
 
   if (!selectedFile) return <></>
 
@@ -46,6 +83,14 @@ export function PreviewPanel({ width }: PreviewPanelProps): JSX.Element {
       {isPdf ? (
         <div className="flex-1 flex flex-col overflow-hidden">
           <PDFViewer filePath={selectedFile.path} />
+          <CommentSection 
+            comment={comment}
+            setComment={setComment}
+            originalComment={originalComment}
+            isEditing={isEditingComment}
+            setIsEditing={setIsEditingComment}
+            onSave={handleSaveComment}
+          />
           <div className="p-3 border-t border-border flex gap-2">
             <button
               onClick={() => openFile(selectedFile)}
@@ -67,6 +112,14 @@ export function PreviewPanel({ width }: PreviewPanelProps): JSX.Element {
         /* Image Preview with ImageViewer */
         <div className="flex-1 flex flex-col overflow-hidden">
           <ImageViewer filePath={selectedFile.path} fileName={selectedFile.name} />
+          <CommentSection 
+            comment={comment}
+            setComment={setComment}
+            originalComment={originalComment}
+            isEditing={isEditingComment}
+            setIsEditing={setIsEditingComment}
+            onSave={handleSaveComment}
+          />
           <div className="p-3 border-t border-border flex gap-2">
             <button
               onClick={() => openFile(selectedFile)}
@@ -91,6 +144,14 @@ export function PreviewPanel({ width }: PreviewPanelProps): JSX.Element {
             filePath={selectedFile.path} 
             fileName={selectedFile.name} 
             onOpen={() => openFile(selectedFile)}
+          />
+          <CommentSection 
+            comment={comment}
+            setComment={setComment}
+            originalComment={originalComment}
+            isEditing={isEditingComment}
+            setIsEditing={setIsEditingComment}
+            onSave={handleSaveComment}
           />
           <div className="p-3 border-t border-border flex gap-2">
             <button
@@ -156,6 +217,32 @@ export function PreviewPanel({ width }: PreviewPanelProps): JSX.Element {
             </div>
           </div>
 
+          {/* Comment Section */}
+          <div className="px-4 py-3 border-t border-border">
+            <div className="flex items-center gap-2 mb-2">
+              <MessageSquare className="h-4 w-4 text-muted-foreground" />
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Comment / Description
+              </span>
+            </div>
+            <textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              onFocus={() => setIsEditingComment(true)}
+              placeholder="Add notes or description for this file..."
+              className="w-full h-20 px-3 py-2 text-sm bg-muted rounded-md border border-border focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+            />
+            {(comment !== originalComment || isEditingComment) && (
+              <button
+                onClick={handleSaveComment}
+                className="mt-2 w-full flex items-center justify-center gap-2 px-3 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm transition-colors"
+              >
+                <Save className="h-3 w-3" />
+                Save Comment
+              </button>
+            )}
+          </div>
+
           {/* Actions */}
           <div className="p-4 border-t border-border space-y-2">
             <button
@@ -196,3 +283,47 @@ function InfoRow({ label, value, className = '' }: InfoRowProps): JSX.Element {
   )
 }
 
+interface CommentSectionProps {
+  comment: string
+  setComment: (value: string) => void
+  originalComment: string
+  isEditing: boolean
+  setIsEditing: (value: boolean) => void
+  onSave: () => void
+}
+
+function CommentSection({ 
+  comment, 
+  setComment, 
+  originalComment,
+  isEditing,
+  setIsEditing,
+  onSave 
+}: CommentSectionProps): JSX.Element {
+  return (
+    <div className="px-3 py-2 border-t border-border">
+      <div className="flex items-center gap-2 mb-1">
+        <MessageSquare className="h-3 w-3 text-muted-foreground" />
+        <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+          Comment
+        </span>
+      </div>
+      <textarea
+        value={comment}
+        onChange={(e) => setComment(e.target.value)}
+        onFocus={() => setIsEditing(true)}
+        placeholder="Add notes..."
+        className="w-full h-14 px-2 py-1 text-xs bg-muted rounded border border-border focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+      />
+      {(comment !== originalComment || isEditing) && (
+        <button
+          onClick={onSave}
+          className="mt-1 w-full flex items-center justify-center gap-1 px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 transition-colors"
+        >
+          <Save className="h-3 w-3" />
+          Save
+        </button>
+      )}
+    </div>
+  )
+}
