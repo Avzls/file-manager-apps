@@ -3,10 +3,12 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
-  X
+  X,
+  Clock
 } from 'lucide-react'
 import { useFileStore } from '../stores/fileStore'
 import { useFavoritesStore } from '../stores/favoritesStore'
+import { useRecentFilesStore } from '../stores/recentFilesStore'
 import { IndexPanel } from './IndexPanel'
 import { FileCategory } from '@shared/types'
 
@@ -131,6 +133,17 @@ export function Sidebar({ collapsed, onToggle, onOpenSettings }: SidebarProps): 
             <FavoritesList />
           </div>
         )}
+
+        {/* Recent Files */}
+        {!collapsed && (
+          <div className="px-3 mt-4">
+            <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wider flex items-center gap-2">
+              <Clock className="h-3 w-3" />
+              Recent Files
+            </h3>
+            <RecentFilesList />
+          </div>
+        )}
       </div>
 
       {/* Index Panel - Only show when not collapsed */}
@@ -195,6 +208,56 @@ function FavoritesList(): JSX.Element {
           </div>
         )
       })}
+    </div>
+  )
+}
+
+// Recent Files List Component
+function RecentFilesList(): JSX.Element {
+  const { recentFiles, removeRecentFile } = useRecentFilesStore()
+  
+  if (recentFiles.length === 0) {
+    return (
+      <div className="text-sm text-gray-500 dark:text-gray-400 px-2 py-2">
+        No recent files
+      </div>
+    )
+  }
+  
+  const handleQuickOpen = async (path: string) => {
+    try {
+      await (window as any).api.quickOpen(path)
+    } catch (err) {
+      console.error('Quick open failed:', err)
+    }
+  }
+  
+  return (
+    <div className="space-y-1 max-h-32 overflow-auto">
+      {recentFiles.slice(0, 5).map((file) => (
+        <div 
+          key={file.path}
+          className="group flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
+          onClick={() => handleQuickOpen(file.path)}
+        >
+          <Clock className="h-3 w-3 text-gray-400 shrink-0" />
+          <span 
+            className="text-sm truncate flex-1"
+            title={file.path}
+          >
+            {file.name}
+          </span>
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              removeRecentFile(file.path)
+            }}
+            className="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </div>
+      ))}
     </div>
   )
 }

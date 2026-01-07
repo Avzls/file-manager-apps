@@ -92,6 +92,27 @@ function setupIpcHandlers(mainWindow: BrowserWindow): void {
     return await fileService.openInExplorer(path)
   })
 
+  // Quick open in specific app (for DWG, PDF, etc)
+  ipcMain.handle('file:quick-open', async (_, filePath: string, appPath?: string) => {
+    const { spawn } = await import('child_process')
+    const fs = await import('fs')
+    
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      throw new Error('File not found')
+    }
+    
+    if (appPath) {
+      // Open with specific app
+      spawn(appPath, [filePath], { detached: true, stdio: 'ignore' }).unref()
+    } else {
+      // Use shell to open with default app
+      shell.openPath(filePath)
+    }
+    
+    return true
+  })
+
   // File operations
   ipcMain.handle('file:rename', async (_, oldPath: string, newName: string) => {
     const fs = await import('fs/promises')
@@ -103,8 +124,8 @@ function setupIpcHandlers(mainWindow: BrowserWindow): void {
   })
 
   ipcMain.handle('file:delete', async (_, path: string) => {
-    const fs = await import('fs/promises')
-    await fs.rm(path, { recursive: true })
+    // Move to Recycle Bin instead of permanent delete
+    await shell.trashItem(path)
   })
 
   ipcMain.handle('file:move', async (_, sourcePath: string, destFolder: string) => {

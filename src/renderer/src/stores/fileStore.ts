@@ -6,6 +6,8 @@ interface FileState {
   currentPath: string
   files: FileInfo[]
   selectedFile: FileInfo | null
+  selectedFiles: FileInfo[]  // Multi-select
+  lastSelectedIndex: number | null  // For shift+click
   
   // Category filter
   categoryFilter: FileCategory | null
@@ -34,6 +36,12 @@ interface FileState {
   setSortBy: (sort: 'name' | 'date' | 'size' | 'type') => void
   setSortOrder: (order: 'asc' | 'desc') => void
   
+  // Multi-select actions
+  toggleFileSelection: (file: FileInfo, ctrlKey: boolean, shiftKey: boolean) => void
+  selectAll: () => void
+  clearSelection: () => void
+  isFileSelected: (file: FileInfo) => boolean
+  
   // Computed - filtered files
   getFilteredFiles: () => FileInfo[]
   
@@ -56,6 +64,8 @@ export const useFileStore = create<FileState>((set, get) => ({
   currentPath: DEFAULT_PATH,
   files: [],
   selectedFile: null,
+  selectedFiles: [],
+  lastSelectedIndex: null,
   categoryFilter: null,
   history: [DEFAULT_PATH],
   historyIndex: 0,
@@ -66,7 +76,7 @@ export const useFileStore = create<FileState>((set, get) => ({
   sortOrder: 'asc',
 
   setCurrentPath: (path) => set({ currentPath: path }),
-  setFiles: (files) => set({ files }),
+  setFiles: (files) => set({ files, selectedFiles: [], lastSelectedIndex: null }),
   setSelectedFile: (file) => set({ selectedFile: file }),
   setCategoryFilter: (category) => set({ categoryFilter: category }),
   setIsLoading: (loading) => set({ isLoading: loading }),
@@ -74,6 +84,60 @@ export const useFileStore = create<FileState>((set, get) => ({
   setViewMode: (mode) => set({ viewMode: mode }),
   setSortBy: (sort) => set({ sortBy: sort }),
   setSortOrder: (order) => set({ sortOrder: order }),
+
+  // Multi-select methods
+  toggleFileSelection: (file, ctrlKey, shiftKey) => {
+    const { selectedFiles, getFilteredFiles, lastSelectedIndex } = get()
+    const files = getFilteredFiles()
+    const fileIndex = files.findIndex(f => f.id === file.id)
+    
+    if (shiftKey && lastSelectedIndex !== null) {
+      // Shift+click: select range
+      const start = Math.min(lastSelectedIndex, fileIndex)
+      const end = Math.max(lastSelectedIndex, fileIndex)
+      const rangeFiles = files.slice(start, end + 1)
+      set({ 
+        selectedFiles: rangeFiles,
+        selectedFile: file
+      })
+    } else if (ctrlKey) {
+      // Ctrl+click: toggle individual
+      const isSelected = selectedFiles.some(f => f.id === file.id)
+      if (isSelected) {
+        set({ 
+          selectedFiles: selectedFiles.filter(f => f.id !== file.id),
+          lastSelectedIndex: fileIndex,
+          selectedFile: file
+        })
+      } else {
+        set({ 
+          selectedFiles: [...selectedFiles, file],
+          lastSelectedIndex: fileIndex,
+          selectedFile: file
+        })
+      }
+    } else {
+      // Normal click: single select
+      set({ 
+        selectedFiles: [file],
+        lastSelectedIndex: fileIndex,
+        selectedFile: file
+      })
+    }
+  },
+
+  selectAll: () => {
+    const files = get().getFilteredFiles()
+    set({ selectedFiles: files })
+  },
+
+  clearSelection: () => {
+    set({ selectedFiles: [], lastSelectedIndex: null })
+  },
+
+  isFileSelected: (file) => {
+    return get().selectedFiles.some(f => f.id === file.id)
+  },
 
   getFilteredFiles: () => {
     const { files, categoryFilter, sortBy, sortOrder } = get()
