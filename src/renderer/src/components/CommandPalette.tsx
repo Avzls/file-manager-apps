@@ -221,7 +221,7 @@ export function CommandPalette(): JSX.Element | null {
       
       {/* Palette */}
       <div 
-        className="relative w-full max-w-xl bg-card border border-border rounded-xl shadow-2xl overflow-hidden"
+        className="relative w-full max-w-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl overflow-hidden"
         onClick={e => e.stopPropagation()}
         style={{ animation: 'scaleIn 0.15s ease-out' }}
       >
@@ -283,16 +283,16 @@ export function CommandPalette(): JSX.Element | null {
                           className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${
                             isSelected 
                               ? 'bg-primary text-primary-foreground' 
-                              : 'hover:bg-muted'
+                              : 'text-foreground hover:bg-muted'
                           }`}
                         >
-                          <div className={isSelected ? 'text-primary-foreground' : 'text-muted-foreground'}>
+                          <div className={isSelected ? 'text-primary-foreground' : 'text-gray-500'}>
                             {cmd.icon}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="font-medium truncate">{cmd.title}</div>
+                            <div className={`font-medium truncate ${isSelected ? '' : 'text-foreground'}`}>{cmd.title}</div>
                             {cmd.description && (
-                              <div className={`text-sm truncate ${isSelected ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>
+                              <div className={`text-sm truncate ${isSelected ? 'text-primary-foreground/80' : 'text-gray-500'}`}>
                                 {cmd.description}
                               </div>
                             )}
