@@ -1,9 +1,20 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
+interface SqlServerConfig {
+  server: string
+  database: string
+  domain: string
+  username: string
+}
+
 interface SettingsState {
   // Paths - now supports multiple root paths
   rootPaths: string[]
+  
+  // Database
+  dbType: 'sqlite' | 'sqlserver'
+  sqlServerConfig: SqlServerConfig
   
   // Appearance
   theme: 'light' | 'dark' | 'system'
@@ -20,6 +31,8 @@ interface SettingsState {
   // Actions
   addRootPath: (path: string) => void
   removeRootPath: (path: string) => void
+  setDbType: (type: 'sqlite' | 'sqlserver') => void
+  setSqlServerConfig: (config: SqlServerConfig) => void
   setTheme: (theme: 'light' | 'dark' | 'system') => void
   setViewMode: (mode: 'grid' | 'list') => void
   setThumbnailSize: (size: 'small' | 'medium' | 'large') => void
@@ -33,6 +46,13 @@ export const useSettingsStore = create<SettingsState>()(
   persist(
     (set, get) => ({
       rootPaths: ['D:\\coba'],
+      dbType: 'sqlite',
+      sqlServerConfig: {
+        server: 'localhost\\SQLEXPRESS',
+        database: 'FileManagerDB',
+        domain: 'YASUNAGA',
+        username: 'alvin'
+      },
       theme: 'dark',
       viewMode: 'grid',
       thumbnailSize: 'medium',
@@ -49,6 +69,8 @@ export const useSettingsStore = create<SettingsState>()(
       removeRootPath: (path) => {
         set({ rootPaths: get().rootPaths.filter(p => p !== path) })
       },
+      setDbType: (type) => set({ dbType: type }),
+      setSqlServerConfig: (config) => set({ sqlServerConfig: config }),
       setTheme: (theme) => {
         set({ theme })
         // Apply theme to document

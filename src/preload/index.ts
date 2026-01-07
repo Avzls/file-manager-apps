@@ -61,6 +61,16 @@ const api = {
   getFolderSize: (folderPath: string): Promise<number> =>
     ipcRenderer.invoke('file:get-folder-size', folderPath),
 
+  // File comments
+  getComment: (filePath: string): Promise<string | null> =>
+    ipcRenderer.invoke('file:get-comment', filePath),
+
+  setComment: (filePath: string, comment: string): Promise<void> =>
+    ipcRenderer.invoke('file:set-comment', filePath, comment),
+
+  deleteComment: (filePath: string): Promise<void> =>
+    ipcRenderer.invoke('file:delete-comment', filePath),
+
   // AutoCAD operations
   getAutocadPreview: (path: string): Promise<string | null> =>
     ipcRenderer.invoke('autocad:get-preview', path),
@@ -98,7 +108,14 @@ const api = {
   onIndexProgress: (callback: (data: { current: string; count: number }) => void) => {
     ipcRenderer.on('index:progress', (_, data) => callback(data))
     return () => ipcRenderer.removeAllListeners('index:progress')
-  }
+  },
+
+  // Database operations
+  setDbType: (dbType: 'sqlite' | 'sqlserver', config?: any): Promise<{ success: boolean; message: string }> =>
+    ipcRenderer.invoke('db:set-type', dbType, config),
+
+  testDbConnection: (): Promise<{ success: boolean; message: string }> =>
+    ipcRenderer.invoke('db:test-connection')
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to
