@@ -8,18 +8,34 @@ Aplikasi desktop untuk mempermudah pencarian dan pengelolaan file di folder engi
 
 ## ✨ Fitur
 
-- 📁 **File Browser** - Navigasi folder dengan grid/list view
-- 🔍 **Fast Search** - Pencarian file terindeks dengan SQLite
-- 📄 **PDF Preview** - Preview PDF dengan zoom & navigasi halaman
-- 🖼️ **Image Preview** - Preview gambar dengan zoom & rotate
-- 📐 **AutoCAD Preview** - Preview thumbnail DWG files
-- ⭐ **Favorites** - Tandai file favorit
-- 🏷️ **Categories** - Filter file berdasarkan kategori
-- 🔃 **Sorting** - Urutkan berdasarkan nama, tanggal, ukuran, tipe
-- 🖱️ **Drag & Drop** - Pindahkan file antar folder
-- 📋 **Context Menu** - Rename, delete, copy path
-- 🔄 **Auto-Update** - Update otomatis dari server
-- 🌙 **Dark/Light Theme** - Tema gelap dan terang
+### 📁 File Management
+- **File Browser** - Navigasi folder dengan grid/list view
+- **Browser Tabs** - Buka multiple folder dalam tabs seperti browser
+- **Drag & Drop** - Pindahkan file antar folder
+- **Context Menu** - Rename, delete, copy path
+- **Multi-Select** - Pilih banyak file sekaligus dengan Ctrl/Shift
+
+### 🔍 Search & Index
+- **Fast Search** - Pencarian file terindeks dengan SQLite/SQL Server
+- **Category Filter** - Filter file berdasarkan tipe (PDF, CAD, Image, dll)
+- **Sorting** - Urutkan berdasarkan nama, tanggal, ukuran, tipe
+
+### 👁️ Preview
+- **PDF Preview** - Preview PDF dengan zoom & navigasi halaman
+- **Image Preview** - Preview gambar dengan zoom & rotate
+- **AutoCAD Preview** - Preview thumbnail DWG files
+- **DOCX Thumbnails** - Preview konten dokumen Word
+
+### 💾 Data Sync
+- **File Comments** - Tambah notes/deskripsi per file
+- **SQL Server Sync** - Sinkronisasi comments antar PC via SQL Server
+- **Local SQLite** - Mode offline dengan database lokal
+
+### 🎨 UI/UX
+- ⭐ Favorites - Tandai file favorit
+- 🔄 Auto-Update - Update otomatis dari server
+- 🌙 Dark/Light Theme - Tema gelap dan terang
+- ⌨️ Keyboard Shortcuts - Navigasi cepat dengan keyboard
 
 ## 💻 System Requirements
 
@@ -32,20 +48,17 @@ Aplikasi desktop untuk mempermudah pencarian dan pengelolaan file di folder engi
 | **Storage** | 200 MB |
 | **Display** | 1280 x 720 |
 
+### Optional (untuk sync multi-PC)
+| Component | Specification |
+|-----------|---------------|
+| **SQL Server** | SQL Server 2017+ / SQL Express |
+| **Network** | LAN untuk akses database |
+
 ### Supported Windows Versions
 - ✅ Windows 10 (64-bit) - Version 1903+
 - ✅ Windows 11 (64-bit) - All versions
 - ❌ Windows 7/8/8.1 - Not supported
 - ❌ Windows 32-bit - Not supported
-
-### Recommended
-| Component | Specification |
-|-----------|---------------|
-| **OS** | Windows 11 |
-| **Processor** | Intel Core i5 / AMD Ryzen 5 |
-| **RAM** | 8 GB |
-| **Storage** | 500 MB (untuk index database besar) |
-| **Display** | 1920 x 1080 |
 
 ## 📦 Instalasi
 
@@ -83,6 +96,20 @@ Output: `dist/Engineering File Manager Setup x.x.x.exe`
 
 ## 🔧 Konfigurasi
 
+### SQL Server Setup (Optional)
+
+1. Buat database `FileManagerDB`
+2. Jalankan query untuk membuat login:
+```sql
+USE master;
+CREATE LOGIN FileManagerApp WITH PASSWORD = 'YourPassword!';
+
+USE FileManagerDB;
+CREATE USER FileManagerApp FOR LOGIN FileManagerApp;
+ALTER ROLE db_owner ADD MEMBER FileManagerApp;
+```
+3. Di Settings app, pilih "SQL Server" dan test connection
+
 ### Update Server URL
 Edit `package.json`:
 ```json
@@ -92,12 +119,6 @@ Edit `package.json`:
 }
 ```
 
-### Default Path
-Edit `src/renderer/src/stores/fileStore.ts`:
-```typescript
-const DEFAULT_PATH = 'D:\\your-folder'
-```
-
 ## 📁 Struktur Project
 
 ```
@@ -105,7 +126,7 @@ electron-file-manager/
 ├── src/
 │   ├── main/           # Electron main process
 │   │   ├── index.ts    # Entry point
-│   │   └── services/   # File, DB, Search services
+│   │   └── services/   # File, DB, Search, SQL Server services
 │   ├── preload/        # Preload scripts
 │   └── renderer/       # React frontend
 │       └── src/
@@ -136,13 +157,15 @@ File-file ini otomatis di-generate saat `npm run package`.
 
 ## 🛠️ Tech Stack
 
-- **Electron** - Desktop framework
+- **Electron 28** - Desktop framework
 - **React 18** - UI library
-- **TypeScript** - Type safety
+- **TypeScript 5** - Type safety
 - **Tailwind CSS** - Styling
 - **Zustand** - State management
-- **SQLite** (better-sqlite3) - File indexing
+- **SQLite** (better-sqlite3) - Local file indexing
+- **SQL Server** (mssql) - Multi-PC sync
 - **PDF.js** - PDF rendering
+- **Mammoth.js** - DOCX parsing
 - **Sonner** - Toast notifications
 - **Lucide React** - Icons
 
